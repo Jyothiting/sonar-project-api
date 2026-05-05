@@ -7,12 +7,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
-            steps {
-                git 'https://github.com/Jyothiting/sonar-project-api.git'
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
                 sh '''
