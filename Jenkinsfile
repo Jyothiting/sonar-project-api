@@ -2,28 +2,53 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE_ENV = 'SonarQube'
+        SONARQUBE_SERVER = 'sonarqube-server'   // Name in Jenkins -> Manage Jenkins -> Configure System
+        PROJECT_KEY = 'fastapi-sonar-project'
     }
 
     stages {
 
-        stage('Install Dependencies') {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Jyothiting/sonar-project-api.git'
+            }
+        }
+
+        stage('Install System Dependencies') {
+            steps {
+                sh '''
+                sudo apt update
+                sudo apt install -y python3-venv python3-pip
+                '''
+            }
+        }
+
+        stage('Setup Python Environment') {
             steps {
                 sh '''
                 python3 -m venv venv
                 . venv/bin/activate
                 pip install --upgrade pip
-                pip install -r requirements.txt
+
+                if [ -f requirements.txt ]; then
+                    pip install -r requirements.txt
+                fi
                 '''
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                withSonarQubeEnv("${SONARQUBE_SERVER}") {
                     sh '''
                     . venv/bin/activate
-                    sonar-scanner
+
+                    sonar-scanner \
+                      -Dsonar.projectKey=${PROJECT_KEY} \
+                      -Dsonar.sources=. \
+                      -Dsonar.python.binaries=venv/bin/python \
+                      -Dsonar.host.url=$SONAR_HOST_URL \
+                      -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
@@ -35,6 +60,15 @@ pipeline {
                     waitForQualityGate abortPipeline: true
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Pipeline completed successfully"
+        }
+        failure {
+            echo "❌ Pipeline failed"
         }
     }
 }
