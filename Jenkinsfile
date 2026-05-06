@@ -19,13 +19,10 @@ pipeline {
             }
         }
 
-        stage('Setup & Install Dependencies') {
+        stage('Install Dependencies') {
             steps {
                 sh '''
-                python -m venv venv
-                . venv/bin/activate
-
-                pip install --upgrade pip
+                python -m pip install --upgrade pip
 
                 if [ -f requirements.txt ]; then
                     pip install -r requirements.txt
@@ -40,8 +37,6 @@ pipeline {
             steps {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
                     sh '''
-                    . venv/bin/activate
-
                     sonar-scanner \
                       -Dsonar.projectKey=${PROJECT_KEY} \
                       -Dsonar.sources=. \
