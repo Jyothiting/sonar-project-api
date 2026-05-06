@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.11'
-            args '-u root'
-        }
-    }
+    agent any
 
     environment {
         SONARQUBE_SERVER = 'sonarqube-server'
@@ -20,6 +15,12 @@ pipeline {
         }
 
         stage('Install Dependencies') {
+            agent {
+                docker {
+                    image 'python:3.11'
+                    args '-u root'
+                }
+            }
             steps {
                 sh '''
                 python -m pip install --upgrade pip
@@ -27,13 +28,16 @@ pipeline {
                 if [ -f requirements.txt ]; then
                     pip install -r requirements.txt
                 fi
-
-                pip install sonar-scanner-cli
                 '''
             }
         }
 
         stage('SonarQube Analysis') {
+            agent {
+                docker {
+                    image 'sonarsource/sonar-scanner-cli:latest'
+                }
+            }
             steps {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
                     sh '''
