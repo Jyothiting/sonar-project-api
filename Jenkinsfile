@@ -8,12 +8,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main', url: 'https://github.com/Jyothiting/sonar-project-api.git'
-            }
-        }
-
         stage('Install Dependencies') {
             agent {
                 docker {
@@ -36,16 +30,18 @@ pipeline {
             agent {
                 docker {
                     image 'sonarsource/sonar-scanner-cli:latest'
+                    args '-u root'   // ✅ CRITICAL FIX
                 }
             }
             steps {
-                withSonarQubeEnv("${SONARQUBE_SERVER}") {
+                withSonarQubeEnv('sonarqube-server') {
                     sh '''
                     sonar-scanner \
-                      -Dsonar.projectKey=${PROJECT_KEY} \
+                      -Dsonar.projectKey=fastapi-sonar-project \
                       -Dsonar.sources=. \
                       -Dsonar.host.url=$SONAR_HOST_URL \
-                      -Dsonar.login=$SONAR_AUTH_TOKEN
+                      -Dsonar.login=$SONAR_AUTH_TOKEN \
+                      -Dsonar.userHome=.sonar
                     '''
                 }
             }
