@@ -1,8 +1,13 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.11'
+            args '-u root'
+        }
+    }
 
     environment {
-        SONARQUBE_SERVER = 'sonarqube-server'   // Name in Jenkins -> Manage Jenkins -> Configure System
+        SONARQUBE_SERVER = 'sonarqube-server'
         PROJECT_KEY = 'fastapi-sonar-project'
     }
 
@@ -14,25 +19,19 @@ pipeline {
             }
         }
 
-        stage('Install System Dependencies') {
+        stage('Setup & Install Dependencies') {
             steps {
                 sh '''
-                sudo apt update
-                sudo apt install -y python3-venv python3-pip
-                '''
-            }
-        }
-
-        stage('Setup Python Environment') {
-            steps {
-                sh '''
-                python3 -m venv venv
+                python -m venv venv
                 . venv/bin/activate
+
                 pip install --upgrade pip
 
                 if [ -f requirements.txt ]; then
                     pip install -r requirements.txt
                 fi
+
+                pip install sonar-scanner-cli
                 '''
             }
         }
@@ -46,7 +45,6 @@ pipeline {
                     sonar-scanner \
                       -Dsonar.projectKey=${PROJECT_KEY} \
                       -Dsonar.sources=. \
-                      -Dsonar.python.binaries=venv/bin/python \
                       -Dsonar.host.url=$SONAR_HOST_URL \
                       -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
